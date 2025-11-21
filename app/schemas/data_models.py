@@ -13,7 +13,7 @@ class Vendedores_bruto(BaseModel):
 
 class Vendedores_processado(BaseModel):
     seller_id: str
-    seller_zip_code_prefix: int
+    seller_zip_code_prefix: str
     seller_city: str
     seller_state: str
 
