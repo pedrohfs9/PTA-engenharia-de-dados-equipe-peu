@@ -1,23 +1,24 @@
 import pandas as pd
-from typing import List, Dict, Any
+from .tools import tratar_nulos_mediana # Reutilizando lógica (DRY)
 
 def tratar_produtos(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Função que aplica as regras de padronização e tratamento de nulos
-    para o dataset de Produtos (olist_products_dataset).
+    Aplica regras de padronização para produtos.
     """
     
-    # 1. TRATAMENTO DE CATEGORIAS (Texto e Nulos)
+    # 1. Tratamento de Categorias
+    # Previne erro se a coluna vier toda nula ou numérica
+    df['product_category_name'] = df['product_category_name'].fillna('indefinido')
     df['product_category_name'] = (
         df['product_category_name']
+        .astype(str)
         .str.lower()
         .str.replace(' ', '_', regex=True)
     )
-    df['product_category_name'] = df['product_category_name'].fillna('indefinido') # 
     
-    # 2. TRATAMENTO DE NULOS (NUMÉRICOS PELA MEDIANA)
+    # 2. Tratamento de Nulos (Numéricos)
     colunas_numericas_produtos = [
-        'product_name_lenght',
+        'product_name_lenght', # Mantido 'lenght' pois é assim que está no seu CSV
         'product_description_lenght',
         'product_photos_qty',
         'product_weight_g',
@@ -26,10 +27,10 @@ def tratar_produtos(df: pd.DataFrame) -> pd.DataFrame:
         'product_width_cm'
     ]
     
-    for coluna in colunas_numericas_produtos:
-        # Valores nulos em colunas numéricas devem ser substituídos pela mediana 
-        mediana_valor = df[coluna].median()
-        df[coluna] = df[coluna].fillna(mediana_valor)
+    # Usa a função importada do tools.py em vez de reescrever a lógica
+    df = tratar_nulos_mediana(df, colunas_numericas_produtos)
+    
+    # 3. Limpeza final para API
+    df = df.where(pd.notnull(df), None)
         
-    # Retorna o DataFrame limpo para ser usado pela API
     return df
