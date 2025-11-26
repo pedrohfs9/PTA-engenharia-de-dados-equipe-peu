@@ -58,3 +58,46 @@ class Itensdepedidos_processado(BaseModel):
     shipping_limit_date: datetime
     price: float
     freight_value: float
+
+class OrderInput(BaseModel):
+    """
+    Representa os dados brutos como chegam do n8n (CSV/Planilha).
+    Geralmente tudo chega como string ou nulo.
+    """
+    order_id: str
+    customer_id: str
+    order_status: str
+    # O n8n pode enviar datas como string ou vazio
+    order_purchase_timestamp: Optional[str] = None
+    order_approved_at: Optional[str] = None
+    order_delivered_carrier_date: Optional[str] = None
+    order_delivered_customer_date: Optional[str] = None
+    order_estimated_delivery_date: Optional[str] = None
+
+    class Config:
+        extra = "ignore"  
+
+class OrderProcessed(BaseModel):
+    """
+    Representa os dados limpos e enriquecidos que a API devolve.
+    Aqui garantimos que datas são objetos datetime e números são float.
+    """
+    order_id: str
+    customer_id: str
+    order_status: str
+    
+    # Campos temporais convertidos para datetime real
+    order_purchase_timestamp: Optional[datetime] = None
+    order_approved_at: Optional[datetime] = None
+    order_delivered_carrier_date: Optional[datetime] = None
+    order_delivered_customer_date: Optional[datetime] = None
+    order_estimated_delivery_date: Optional[datetime] = None
+
+    # --- Colunas Criadas (Regras de Negócio) ---
+    tempo_entrega_dias: Optional[float] = None
+    tempo_entrega_estimado_dias: Optional[float] = None
+    diferenca_entrega_dias: Optional[float] = None
+    entrega_no_prazo: Optional[str] = None  # "Sim", "Não", "Não Entregue"
+
+    class Config:
+        from_attributes = True  
