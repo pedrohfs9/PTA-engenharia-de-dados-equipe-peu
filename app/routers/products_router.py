@@ -1,31 +1,30 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from typing import List
 import pandas as pd
-from typing import List, Dict, Any
-from app.services.products_service import tratar_produtos # Importa a função de tratamento
 
-# Cria um novo roteador FastAPI
+# Imports relativos corretos
+from ..schemas.data_models import ProductData, ProductList
+from ..services.products_service import tratar_produtos
+
 router = APIRouter()
 
-@router.post("") # O endpoint será o prefixo definido no main.py, que é "/api/v1/produtos"
-def processar_produtos_endpoint(dados_brutos: List[Dict[str, Any]]):
+@router.post("/processar", response_model=List[ProductData])
+def processar_produtos_endpoint(payload: List[ProductData]):
     """
-    Recebe os dados brutos de Produtos via POST, processa-os e retorna o resultado limpo.
-    Esta função será chamada pelo orquestrador N8N.
+    Recebe Lista tipada, processa e retorna Lista tipada.
     """
-    
     try:
-        # 1. Converte a lista de dicionários (JSON) recebida em um DataFrame Pandas
+        # Converter Pydantic -> DataFrame
+        dados_brutos = [p.model_dump() for p in payload]
         df_bruto = pd.DataFrame(dados_brutos)
         
-        # 2. Chama a função de serviço que contém toda a lógica de limpeza
+        if df_bruto.empty:
+            return []
+            
+        # Chama o serviço refatorado
         df_limpo = tratar_produtos(df_bruto)
         
-        # 3. Converte o DataFrame limpo de volta para uma lista de dicionários (JSON)
-        dados_limpos_json = df_limpo.to_dict('records')
-        
-        # 4. Retorna a resposta padronizada
-        return {"status": "success", "total_registros": len(dados_limpos_json), "data": dados_limpos_json}
+        return df_limpo.to_dict(orient='records')
     
     except Exception as e:
-        # Retorna erro caso algo dê errado no processamento
-        return {"status": "error", "message": f"Falha no processamento: {str(e)}"}
+        raise HTTPException(status_code=500, detail=f"Erro em produtos: {str(e)}")
